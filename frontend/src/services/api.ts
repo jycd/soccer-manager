@@ -48,7 +48,14 @@ export const authAPI = {
   },
   
   register: async (userData: RegisterRequest): Promise<AuthResponse> => {
-    const response = await api.post("/users", userData);
+    // First create the user
+    await api.post("/users", userData);
+    
+    // Then authenticate to get token and teamId
+    const response = await api.post("/auth/token", {
+      email: userData.email,
+      password: userData.password
+    });
     return response.data;
   },
 };

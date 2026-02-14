@@ -3,7 +3,7 @@ import { authAPI, teamAPI, playerAPI } from "./services/api";
 import { Team, Player } from "./types";
 import { Dashboard } from "./components/Dashboard";
 import { TransferMarket } from "./components/TransferMarket";
-import { colors, spacing } from "./styles/theme";
+import { authStorage } from "./utils/auth";
 
 function App() {
   const [token, setToken] = useState<string | null>(null);
@@ -21,8 +21,8 @@ function App() {
   const [teamForm, setTeamForm] = useState({ name: '', country: '' });
 
   useEffect(() => {
-    const savedToken = localStorage.getItem("token");
-    const savedTeamId = localStorage.getItem("teamId");
+    const savedToken = authStorage.getToken();
+    const savedTeamId = authStorage.getTeamId();
     
     // Check if token exists and is valid format
     if (savedToken && savedTeamId) {
@@ -30,8 +30,7 @@ function App() {
       setTeamId(savedTeamId);
     } else if (savedToken && !savedTeamId) {
       // Token exists but no teamId - clear and logout
-      localStorage.removeItem("token");
-      localStorage.removeItem("teamId");
+      authStorage.clearAuth();
       setToken(null);
       setTeamId(null);
     }
@@ -54,8 +53,7 @@ function App() {
     } catch (err: any) {
       if (err.response?.status === 401) {
         // Token expired/invalid - clear and logout
-        localStorage.removeItem("token");
-        localStorage.removeItem("teamId");
+        authStorage.clearAuth();
         setToken(null);
         setTeamId(null);
         setError("Session expired. Please login again.");
@@ -77,8 +75,7 @@ function App() {
         const data = await authAPI.login({ email, password });
         setToken(data.token);
         setTeamId(data.teamId);
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("teamId", data.teamId);
+        authStorage.setAuth(data.token, data.teamId);
       } else {
         const data = await authAPI.register({ 
           email, 
@@ -88,8 +85,7 @@ function App() {
         });
         setToken(data.token);
         setTeamId(data.teamId);
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("teamId", data.teamId);
+        authStorage.setAuth(data.token, data.teamId);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Authentication failed");
@@ -102,8 +98,7 @@ function App() {
     setToken(null);
     setTeamId(null);
     setTeam(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("teamId");
+    authStorage.clearAuth();
   };
 
   const handlePlayerEdit = (player: Player) => {
@@ -128,8 +123,7 @@ function App() {
     } catch (err: any) {
       if (err.response?.status === 401) {
         setError("Authentication failed. Please log in again.");
-        localStorage.removeItem('token');
-        localStorage.removeItem('teamId');
+        authStorage.clearAuth();
         setToken(null);
         setTeamId(null);
       } else {
@@ -149,8 +143,7 @@ function App() {
     } catch (err: any) {
       if (err.response?.status === 401) {
         setError("Authentication failed. Please log in again.");
-        localStorage.removeItem('token');
-        localStorage.removeItem('teamId');
+        authStorage.clearAuth();
         setToken(null);
         setTeamId(null);
       } else {

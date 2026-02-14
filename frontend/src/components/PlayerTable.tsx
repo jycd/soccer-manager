@@ -212,7 +212,7 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                 }}>
                   {editingPlayer === player.id ? (
                     <select
-                      value={playerForm.position || ''}
+                      value={(playerForm.position || player.position)?.toUpperCase()}
                       onChange={(e) => onPlayerFormChange({ ...playerForm, position: e.target.value as Player['position'] })}
                       style={{
                         width: '100%',
