@@ -15,6 +15,22 @@ export interface RegisterRequest {
   role?: string;
 }
 
+export interface UserUpdateRequest {
+  email?: string;
+  password?: string;
+  fullName?: string;
+  role?: string;
+  status?: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  fullName: string;
+  role: string;
+  status: string;
+}
+
 export interface AuthResponse {
   userId: string;
   teamId: string;
@@ -56,6 +72,18 @@ export const authAPI = {
       email: userData.email,
       password: userData.password
     });
+    return response.data;
+  },
+};
+
+export const userAPI = {
+  getCurrentUser: async (userId: string): Promise<User> => {
+    const response = await api.get(`/users/${userId}`);
+    return response.data;
+  },
+  
+  updateUser: async (userId: string, userData: UserUpdateRequest): Promise<User> => {
+    const response = await api.patch(`/users/${userId}`, userData);
     return response.data;
   },
 };

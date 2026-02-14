@@ -40,6 +40,7 @@ Thumbs.db
 HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -100,6 +101,9 @@ junit.xml
 ### VS Code ###
 .vscode/
 
+### Metals (Scala Language Server) ###
+.metals/
+
 # Temporary files #
 ######################
 *.tmp
@@ -112,22 +116,3 @@ junit.xml
 .sass-cache/
 .eslintcache
 .stylelintcache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
-.vscode/

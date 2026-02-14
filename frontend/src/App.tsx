@@ -1,21 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { authAPI, teamAPI, playerAPI } from "./services/api";
-import { Team, Player } from "./types";
-import { Dashboard } from "./components/Dashboard";
-import { TransferMarket } from "./components/TransferMarket";
-import { authStorage } from "./utils/auth";
+import React, { useState, useEffect, useCallback } from 'react';
+import { authAPI, teamAPI, playerAPI, userAPI, User } from './services/api';
+import { Team, Player } from './types';
+import { Dashboard } from './components/Dashboard';
+import { TransferMarket } from './components/TransferMarket';
+import { UserProfileEdit } from './components/UserProfileEdit';
+import { authStorage } from './utils/auth';
 
 function App() {
+  // Authentication state
   const [token, setToken] = useState<string | null>(null);
   const [teamId, setTeamId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Application state
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"dashboard" | "transfers">("dashboard");
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'transfers'>('dashboard');
+  const [isUserProfileEditOpen, setIsUserProfileEditOpen] = useState(false);
+
+  // Form state
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
   const [playerForm, setPlayerForm] = useState<Partial<Player>>({});
   const [teamForm, setTeamForm] = useState({ name: '', country: '' });
@@ -23,16 +31,19 @@ function App() {
   useEffect(() => {
     const savedToken = authStorage.getToken();
     const savedTeamId = authStorage.getTeamId();
-    
-    // Check if token exists and is valid format
+    const savedUserId = authStorage.getUserId();
+
     if (savedToken && savedTeamId) {
       setToken(savedToken);
       setTeamId(savedTeamId);
+      if (savedUserId) {
+        setUserId(savedUserId);
+      }
     } else if (savedToken && !savedTeamId) {
-      // Token exists but no teamId - clear and logout
       authStorage.clearAuth();
       setToken(null);
       setTeamId(null);
+      setUserId(null);
     }
   }, []);
 
@@ -42,66 +53,65 @@ function App() {
     }
   }, [token, teamId]);
 
-  const fetchTeam = async () => {
+  const fetchTeam = useCallback(async () => {
+    if (!teamId) return;
+
     setLoading(true);
-    setError("");
+    setError('');
     try {
-      const teamData = await teamAPI.getMyTeam(teamId!);
+      const teamData = await teamAPI.getMyTeam(teamId);
       setTeam(teamData);
-      // Initialize team form when data loads
       setTeamForm({ name: teamData.name, country: teamData.country });
     } catch (err: any) {
       if (err.response?.status === 401) {
-        // Token expired/invalid - clear and logout
         authStorage.clearAuth();
         setToken(null);
         setTeamId(null);
-        setError("Session expired. Please login again.");
+        setUserId(null);
+        setError('Session expired. Please login again.');
       } else {
-        setError("Failed to load team data");
+        setError('Failed to load team data');
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [teamId]);
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleAuth = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setError('');
 
     try {
-      if (isLogin) {
-        const data = await authAPI.login({ email, password });
-        setToken(data.token);
-        setTeamId(data.teamId);
-        authStorage.setAuth(data.token, data.teamId);
-      } else {
-        const data = await authAPI.register({ 
-          email, 
-          password, 
-          fullName: fullName || email.split("@")[0],
-          role: "ROLE_USER"
-        });
-        setToken(data.token);
-        setTeamId(data.teamId);
-        authStorage.setAuth(data.token, data.teamId);
-      }
+      const data = isLogin
+        ? await authAPI.login({ email, password })
+        : await authAPI.register({
+            email,
+            password,
+            fullName: fullName || email.split('@')[0],
+            role: 'ROLE_USER'
+          });
+
+      setToken(data.token);
+      setTeamId(data.teamId);
+      setUserId(data.userId);
+      authStorage.setAuth(data.token, data.teamId, data.userId);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Authentication failed");
+      setError(err.response?.data?.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
-  };
+  }, [isLogin, email, password, fullName]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setToken(null);
     setTeamId(null);
+    setUserId(null);
     setTeam(null);
     authStorage.clearAuth();
-  };
+  }, []);
 
-  const handlePlayerEdit = (player: Player) => {
+  const handlePlayerEdit = useCallback((player: Player) => {
     setEditingPlayer(player.id);
     setPlayerForm({
       firstName: player.firstName,
@@ -110,49 +120,66 @@ function App() {
       country: player.country,
       position: player.position,
     });
-  };
+  }, []);
 
-  const handlePlayerSave = async (playerId: string) => {
+  const handlePlayerSave = useCallback(async (playerId: string) => {
+    if (!teamId) return;
+
     setLoading(true);
-    setError("");
+    setError('');
     try {
-      await playerAPI.updatePlayer(teamId!, playerId, playerForm);
+      await playerAPI.updatePlayer(teamId, playerId, playerForm);
       await fetchTeam();
       setEditingPlayer(null);
       setPlayerForm({});
     } catch (err: any) {
       if (err.response?.status === 401) {
-        setError("Authentication failed. Please log in again.");
+        setError('Authentication failed. Please log in again.');
         authStorage.clearAuth();
         setToken(null);
         setTeamId(null);
       } else {
-        setError("Failed to update player");
+        setError('Failed to update player');
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [teamId, playerForm, fetchTeam]);
 
-  const handleTeamSave = async () => {
+  const handleTeamSave = useCallback(async () => {
+    if (!teamId) return;
+
     setLoading(true);
-    setError("");
+    setError('');
     try {
-      await teamAPI.updateTeam(teamId!, teamForm);
+      await teamAPI.updateTeam(teamId, teamForm);
       await fetchTeam();
     } catch (err: any) {
       if (err.response?.status === 401) {
-        setError("Authentication failed. Please log in again.");
+        setError('Authentication failed. Please log in again.');
         authStorage.clearAuth();
         setToken(null);
         setTeamId(null);
       } else {
-        setError("Failed to update team");
+        setError('Failed to update team');
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [teamId, teamForm, fetchTeam]);
+
+  const handleUserProfileUpdate = useCallback((updatedUser: User) => {
+    // User profile updated successfully
+    // You could update local state or show a success message here
+  }, []);
+
+  const handleEditProfileClick = useCallback(() => {
+    if (!userId) {
+      alert('User ID not found. Please try logging out and logging back in.');
+      return;
+    }
+    setIsUserProfileEditOpen(true);
+  }, [userId]);
 
   if (!token) {
     return (
@@ -271,18 +298,51 @@ function App() {
               <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937' }}>Soccer Manager</h1>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <span style={{ color: '#6b7280' }}>Team: {team?.name || 'Loading...'}</span>
+              <span style={{ color: '#6b7280', lineHeight: '64px' }}>Team: {team?.name || 'Loading...'}</span>
               <button
-                onClick={handleLogout}
+                onClick={handleEditProfileClick}
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  justifyContent: 'center',
+                  height: '64px',
                   color: '#6b7280',
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  fontFamily: 'inherit',
+                  fontWeight: 'inherit',
+                  textDecoration: 'none',
+                  padding: '0',
+                  margin: '0',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  verticalAlign: 'middle'
+                }}
+              >
+                Edit Profile
+              </button>
+              <button
+                onClick={handleLogout}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '64px',
+                  color: '#6b7280',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontFamily: 'inherit',
+                  fontWeight: 'inherit',
+                  textDecoration: 'none',
+                  padding: '0',
+                  margin: '0',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  verticalAlign: 'middle'
                 }}
               >
                 Logout
@@ -356,6 +416,15 @@ function App() {
           </div>
         )}
       </main>
+
+      {userId && (
+        <UserProfileEdit
+          userId={userId}
+          isOpen={isUserProfileEditOpen}
+          onClose={() => setIsUserProfileEditOpen(false)}
+          onUpdate={handleUserProfileUpdate}
+        />
+      )}
     </div>
   );
 }
