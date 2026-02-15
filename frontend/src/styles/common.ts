@@ -1,11 +1,4 @@
-import { colors, spacing, typography, borderRadius, shadows } from '../styles/theme';
-
-export const cardStyle = {
-  backgroundColor: colors.surface,
-  borderRadius: borderRadius.lg,
-  boxShadow: shadows.md,
-  overflow: 'hidden'
-};
+import { colors, spacing, typography, borderRadius, shadows } from './theme';
 
 export const containerStyle = {
   maxWidth: '1200px',

@@ -1,26 +1,25 @@
 # Soccer Manager Frontend
 
-A modern, optimized React frontend for the Soccer Manager fantasy football application with enhanced visual design and performance optimizations.
+A clean, maintainable React frontend for the Soccer Manager fantasy football application with balanced optimization and user account management.
 
 ## Features
 
-- **Modern UI Design**: Beautiful gradient-based interface with smooth animations
 - **User Authentication**: Login and registration with JWT tokens
-- **Enhanced Dashboard**: Optimized team statistics and player roster with responsive layout
-- **Transfer Market**: Visually stunning player browsing and purchasing interface
-- **Team Management**: Inline editing with modern form controls and validation
-- **Responsive Design**: Mobile-first approach with no horizontal scrolling
-- **Performance Optimized**: React best practices with memoization and component splitting
+- **Account Management**: Complete user profile editing and account deletion
+- **Team Dashboard**: Clean interface for team statistics and player roster
+- **Transfer Market**: Player browsing and purchasing functionality
+- **Team Management**: Edit team information and player details
+- **Responsive Design**: Mobile-friendly interface
+- **Balanced Optimization**: Essential optimizations without over-engineering
 
 ## Tech Stack
 
 - **React 18** with TypeScript and modern hooks
-- **React Router DOM** for navigation
 - **Axios** for API communication
 - **JWT** for authentication
-- **Modern CSS** with gradients, animations, and design system
-- **Component Architecture**: Reusable UI components with consistent theming
-- **Performance Optimizations**: useCallback, useMemo, and code splitting
+- **Component Architecture**: Essential reusable components
+- **Custom Hooks**: Authentication state management
+- **Clean Code**: Maintainable structure with sensible abstractions
 
 ## Getting Started
 
@@ -44,69 +43,93 @@ The frontend is configured to connect to the backend API running on http://local
 
 ```
 src/
-├── components/          # React components
-│   ├── Dashboard.tsx       # Main dashboard with optimized layout
-│   ├── TeamStats.tsx       # Team statistics cards component
-│   ├── PlayerTable.tsx     # Optimized player table with no horizontal scroll
-│   ├── TransferMarket.tsx  # Enhanced transfer market with modern design
-│   ├── Button.tsx          # Reusable button component with variants
+├── components/          # Essential React components
+│   ├── Dashboard.tsx       # Main dashboard with team overview
+│   ├── TeamStats.tsx       # Team statistics cards
+│   ├── PlayerTable.tsx     # Player roster table
+│   ├── TransferMarket.tsx  # Transfer market interface
+│   ├── UserProfileEdit.tsx # User profile and account management
+│   ├── Button.tsx          # Reusable button component
 │   ├── Modal.tsx           # Reusable modal component
-│   └── SortableHeader.tsx  # Reusable table header component
+│   ├── CurrencyDisplay.tsx # Currency formatting component
+│   ├── SortableHeader.tsx  # Table header component
+│   └── index.ts           # Component exports
+├── hooks/              # Custom React hooks
+│   ├── useAuth.ts         # Authentication state management
+│   └── index.ts          # Hook exports
 ├── services/           # API services
 │   └── api.ts         # API client with JWT handling
 ├── types/             # TypeScript type definitions
 │   └── index.ts       # Application types
+├── utils/             # Utility functions
+│   ├── auth.ts         # Authentication utilities
+│   ├── helpers.ts      # Essential helper functions
+│   └── index.ts       # Utility exports
+├── constants/         # Application constants
+│   └── index.ts       # API and configuration constants
 ├── styles/            # Design system
 │   ├── theme.ts       # Color palette, typography, spacing
 │   └── common.ts      # Shared styles
 ├── App.tsx            # Main application component
-├── index.tsx          # Application entry point
-└── index.css          # Global styles with animations
+└── index.tsx          # Application entry point
 ```
 
 ## Usage
 
 1. **Register/Login**: Create an account or sign in to access your team
-2. **Dashboard**: View your team overview with beautiful statistics cards and player roster
-3. **Transfer Market**: Browse available players with enhanced visual design and purchase new talent
-4. **Team Management**: Edit team name/country with modern inline editing and update player information
+2. **Dashboard**: View your team overview with statistics and player roster
+3. **Transfer Market**: Browse available players and purchase new talent
+4. **Team Management**: Edit team name/country and update player information
+5. **Profile Management**: Edit user profile and delete account if needed
 
-## Design System
+## Frontend Architecture
 
-The frontend uses a comprehensive design system:
+The frontend follows a balanced optimization approach:
 
-- **Color Palette**: Modern indigo/purple theme with semantic colors
-- **Typography**: Consistent font scales and weights
-- **Spacing**: Standardized spacing system
-- **Components**: Reusable UI components with consistent styling
-- **Animations**: Smooth transitions and micro-interactions
-- **Responsive**: Mobile-first design approach
+### Essential Components Only
+- **Button**: Reusable button with multiple variants
+- **Modal**: Complex modal for confirmations and forms
+- **CurrencyDisplay**: Specialized currency formatting
+- **Core Features**: Dashboard, TransferMarket, UserProfileEdit
 
-## Performance Optimizations
+### Custom Hooks
+- **useAuth**: Centralized authentication state and token management
 
-- **Component Splitting**: Large components broken into focused, reusable pieces
-- **React Hooks**: useCallback and useMemo for optimal rendering
-- **Memoization**: Player status calculations optimized
-- **Bundle Optimization**: Unused imports and code removed
-- **CSS Optimization**: Consolidated styles and animations
+### Minimal Utilities
+- **formatCurrency**: Currency formatting
+- **validateEmail/Password**: Basic form validation
+- **authStorage**: Token management utilities
+
+### Essential Constants
+- **API_BASE_URL**: Backend API endpoint
+- **POSITION_ORDER**: Player position sorting logic
 
 ## API Integration
 
 The frontend communicates with the backend REST API using JWT authentication:
 
 - **Authentication**: `/auth/token` (login) and `/users` (registration)
+- **User Management**: `/users/{id}` (delete account)
 - **Team Data**: `/teams/{id}` with optional `?with_players=true` parameter
-- **Transfers**: `/transfers` (list) and `/transfers/{id}/buy` (purchase)
+- **Transfers**: `/transfers` (list) and `/teams/{teamId}/transfers/{transferId}` (buy)
 - **Player Updates**: `/teams/{teamId}/players/{playerId}` (edit)
+
+## Development Philosophy
+
+This frontend follows a **balanced optimization** approach:
+
+- **No Over-Engineering**: Simple forms use inline styles, not over-abstracted components
+- **Essential Abstractions**: Only complex UI elements are extracted to components
+- **Maintainability**: Clean structure that's easy to understand and modify
+- **Performance**: Optimized where it matters without unnecessary complexity
 
 ## Development Notes
 
 - **TypeScript**: Full type safety across all components
 - **Modern React**: Hooks-based architecture with best practices
-- **Design System**: Consistent theming and component library
-- **Performance**: Optimized rendering and minimal re-renders
-- **Accessibility**: Semantic HTML and keyboard navigation
+- **Authentication**: JWT tokens stored in localStorage with automatic cleanup
 - **Error Handling**: User-friendly error messages and loading states
+- **Account Deletion**: Secure user self-deletion with proper confirmation
 
 ## Troubleshooting
 

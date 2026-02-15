@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { authAPI, teamAPI, playerAPI, userAPI, User } from './services/api';
 import { Team, Player } from './types';
-import { Dashboard } from './components/Dashboard';
-import { TransferMarket } from './components/TransferMarket';
-import { UserProfileEdit } from './components/UserProfileEdit';
+import { Dashboard, TransferMarket, UserProfileEdit, Button, Modal } from './components';
+import { useAuth } from './hooks';
 import { authStorage } from './utils/auth';
+import { colors, spacing } from './styles/theme';
+import { containerStyle } from './styles/common';
 
 function App() {
-  // Authentication state
-  const [token, setToken] = useState<string | null>(null);
-  const [teamId, setTeamId] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  const { token, teamId, userId, setAuth, clearAuth } = useAuth();
 
   // Application state
   const [team, setTeam] = useState<Team | null>(null);
@@ -24,28 +22,19 @@ function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
-  const [playerForm, setPlayerForm] = useState<Partial<Player>>({});
-  const [teamForm, setTeamForm] = useState({ name: '', country: '' });
 
   useEffect(() => {
     const savedToken = authStorage.getToken();
     const savedTeamId = authStorage.getTeamId();
     const savedUserId = authStorage.getUserId();
 
-    if (savedToken && savedTeamId) {
-      setToken(savedToken);
-      setTeamId(savedTeamId);
-      if (savedUserId) {
-        setUserId(savedUserId);
-      }
+    if (savedToken && savedTeamId && savedUserId) {
+      setAuth(savedToken, savedTeamId, savedUserId);
     } else if (savedToken && !savedTeamId) {
       authStorage.clearAuth();
-      setToken(null);
-      setTeamId(null);
-      setUserId(null);
+      clearAuth();
     }
-  }, []);
+  }, [setAuth, clearAuth]);
 
   useEffect(() => {
     if (token && teamId) {
@@ -61,13 +50,9 @@ function App() {
     try {
       const teamData = await teamAPI.getMyTeam(teamId);
       setTeam(teamData);
-      setTeamForm({ name: teamData.name, country: teamData.country });
     } catch (err: any) {
       if (err.response?.status === 401) {
-        authStorage.clearAuth();
-        setToken(null);
-        setTeamId(null);
-        setUserId(null);
+        clearAuth();
         setError('Session expired. Please login again.');
       } else {
         setError('Failed to load team data');
@@ -75,7 +60,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [teamId]);
+  }, [teamId, clearAuth]);
 
   const handleAuth = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,90 +77,44 @@ function App() {
             role: 'ROLE_USER'
           });
 
-      setToken(data.token);
-      setTeamId(data.teamId);
-      setUserId(data.userId);
-      authStorage.setAuth(data.token, data.teamId, data.userId);
+      setAuth(data.token, data.teamId, data.userId);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
-  }, [isLogin, email, password, fullName]);
+  }, [isLogin, email, password, fullName, setAuth]);
 
   const handleLogout = useCallback(() => {
-    setToken(null);
-    setTeamId(null);
-    setUserId(null);
     setTeam(null);
-    authStorage.clearAuth();
-  }, []);
+    clearAuth();
+  }, [clearAuth]);
 
   const handlePlayerEdit = useCallback((player: Player) => {
-    setEditingPlayer(player.id);
-    setPlayerForm({
-      firstName: player.firstName,
-      lastName: player.lastName,
-      age: player.age,
-      country: player.country,
-      position: player.position,
-    });
+    // handle player edit
   }, []);
 
   const handlePlayerSave = useCallback(async (playerId: string) => {
-    if (!teamId) return;
-
-    setLoading(true);
-    setError('');
-    try {
-      await playerAPI.updatePlayer(teamId, playerId, playerForm);
-      await fetchTeam();
-      setEditingPlayer(null);
-      setPlayerForm({});
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
-        authStorage.clearAuth();
-        setToken(null);
-        setTeamId(null);
-      } else {
-        setError('Failed to update player');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [teamId, playerForm, fetchTeam]);
+    // handle player save
+  }, []);
 
   const handleTeamSave = useCallback(async () => {
-    if (!teamId) return;
-
-    setLoading(true);
-    setError('');
-    try {
-      await teamAPI.updateTeam(teamId, teamForm);
-      await fetchTeam();
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
-        authStorage.clearAuth();
-        setToken(null);
-        setTeamId(null);
-      } else {
-        setError('Failed to update team');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [teamId, teamForm, fetchTeam]);
+    // handle team save
+  }, []);
 
   const handleUserProfileUpdate = useCallback((updatedUser: User) => {
     // User profile updated successfully
     // You could update local state or show a success message here
   }, []);
 
+  const handleUserDelete = useCallback(() => {
+    // User deleted successfully, logout and clear auth
+    handleLogout();
+  }, [handleLogout]);
+
   const handleEditProfileClick = useCallback(() => {
     if (!userId) {
-      alert('User ID not found. Please try logging out and logging back in.');
+      setError('User ID not found. Please try logging out and logging back in.');
       return;
     }
     setIsUserProfileEditOpen(true);
@@ -192,55 +131,52 @@ function App() {
           </div>
           <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {!isLogin && (
-              <div>
-                <input
-                  type="text"
-                  required
-                  placeholder="Full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
+              <input
+                type="text"
+                name="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Full name"
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
+              />
             )}
-            <div>
-              <input
-                type="email"
-                required
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
-            <div>
-              <input
-                type="password"
-                required
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
+            <input
+              type="email"
+              name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email address"
+              required
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '14px'
+              }}
+            />
+            <input
+              type="password"
+              name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              required
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '14px'
+              }}
+            />
 
             {error && (
               <div style={{ color: '#dc2626', fontSize: '14px', textAlign: 'center' }}>
@@ -352,7 +288,7 @@ function App() {
         </div>
       </nav>
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+      <main style={containerStyle}>
         {loading && (
           <div style={{ textAlign: 'center', padding: '48px' }}>
             <div style={{ color: '#6b7280' }}>Loading team data...</div>
@@ -423,6 +359,7 @@ function App() {
           isOpen={isUserProfileEditOpen}
           onClose={() => setIsUserProfileEditOpen(false)}
           onUpdate={handleUserProfileUpdate}
+          onDelete={handleUserDelete}
         />
       )}
     </div>

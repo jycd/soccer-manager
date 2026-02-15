@@ -1,7 +1,6 @@
 ﻿import axios from "axios";
 import { Team, Player, Transfer } from '../types';
-
-const API_BASE_URL = "http://localhost:8081";
+import { API_BASE_URL } from '../constants';
 
 export interface LoginRequest {
   email: string;
@@ -85,6 +84,10 @@ export const userAPI = {
   updateUser: async (userId: string, userData: UserUpdateRequest): Promise<User> => {
     const response = await api.patch(`/users/${userId}`, userData);
     return response.data;
+  },
+
+  deleteUser: async (userId: string): Promise<void> => {
+    await api.delete(`/users/${userId}`);
   },
 };
 

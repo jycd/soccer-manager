@@ -3,6 +3,7 @@ import { transferAPI } from "../services/api";
 import { Transfer, Player } from "../types";
 import { Button } from "./Button";
 import { CurrencyDisplay } from "./CurrencyDisplay";
+import { Modal } from "./Modal";
 import { colors, typography, spacing, borderRadius, shadows } from "../styles/theme";
 
 interface TransferMarketProps {
@@ -15,6 +16,11 @@ export const TransferMarket: React.FC<TransferMarketProps> = ({ teamId, teamPlay
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [buying, setBuying] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; transferId: string; transfer: Transfer | null }>({
+    isOpen: false,
+    transferId: "",
+    transfer: null
+  });
 
   const isPlayerOnMyTeam = useCallback((playerId: string): boolean => {
     return teamPlayers.some(player => player.id === playerId);
@@ -35,6 +41,34 @@ export const TransferMarket: React.FC<TransferMarketProps> = ({ teamId, teamPlay
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const handleBuyPlayerClick = useCallback((transfer: Transfer) => {
+    setConfirmModal({
+      isOpen: true,
+      transferId: transfer.id,
+      transfer
+    });
+  }, []);
+
+  const confirmBuyPlayer = useCallback(async () => {
+    if (!confirmModal.transferId) return;
+    
+    setBuying(confirmModal.transferId);
+    setConfirmModal({ isOpen: false, transferId: "", transfer: null });
+    
+    try {
+      await transferAPI.buyPlayer(teamId, confirmModal.transferId);
+      fetchTransfers();
+    } catch (err) {
+      setError("Failed to buy player");
+    } finally {
+      setBuying(null);
+    }
+  }, [teamId, confirmModal.transferId, fetchTransfers]);
+
+  const cancelBuyPlayer = useCallback(() => {
+    setConfirmModal({ isOpen: false, transferId: "", transfer: null });
   }, []);
 
   const handleBuyPlayer = useCallback(async (transferId: string) => {
@@ -353,7 +387,7 @@ export const TransferMarket: React.FC<TransferMarketProps> = ({ teamId, teamPlay
                             </div>
                           ) : (
                             <Button
-                              onClick={() => handleBuyPlayer(transfer.id)}
+                              onClick={() => handleBuyPlayerClick(transfer)}
                               disabled={buying === transfer.id}
                               variant="success"
                               size="md"
@@ -372,6 +406,121 @@ export const TransferMarket: React.FC<TransferMarketProps> = ({ teamId, teamPlay
           ))}
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <Modal
+        isOpen={confirmModal.isOpen}
+        onClose={cancelBuyPlayer}
+        title="Confirm Purchase"
+        width="450px"
+      >
+        {confirmModal.transfer && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: spacing.md,
+              padding: spacing.md,
+              backgroundColor: colors.background,
+              borderRadius: borderRadius.md,
+              border: `1px solid ${colors.border}`
+            }}>
+              <div style={{
+                width: '50px',
+                height: '50px',
+                borderRadius: borderRadius.full,
+                background: colors.gradients.primary,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: typography.lg,
+                color: 'white',
+                fontWeight: '700'
+              }}>
+                {confirmModal.transfer.player?.firstName?.charAt(0) || '?'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: typography.lg,
+                  fontWeight: '600',
+                  color: colors.text.primary,
+                  marginBottom: spacing.xs
+                }}>
+                  {confirmModal.transfer.player?.firstName} {confirmModal.transfer.player?.lastName}
+                </div>
+                <div style={{
+                  fontSize: typography.sm,
+                  color: colors.text.secondary
+                }}>
+                  {confirmModal.transfer.player?.position} • {confirmModal.transfer.player?.age} years • {confirmModal.transfer.player?.country}
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: spacing.md,
+              backgroundColor: '#fef3c7',
+              borderRadius: borderRadius.md,
+              border: '1px solid #fbbf24'
+            }}>
+              <div style={{
+                fontSize: typography.base,
+                color: colors.text.secondary,
+                fontWeight: '500'
+              }}>
+                Purchase Price:
+              </div>
+              <div style={{
+                fontSize: typography.xl,
+                fontWeight: '700',
+                color: colors.success
+              }}>
+                <CurrencyDisplay amount={parseFloat(confirmModal.transfer.askPrice || '0')} />
+              </div>
+            </div>
+
+            <div style={{
+              fontSize: typography.sm,
+              color: colors.text.muted,
+              textAlign: 'center',
+              padding: spacing.sm,
+              backgroundColor: colors.background,
+              borderRadius: borderRadius.md,
+              border: `1px solid ${colors.border}`
+            }}>
+              This player will be added to your team and the amount will be deducted from your team budget.
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: spacing.md,
+              justifyContent: 'flex-end',
+              marginTop: spacing.md
+            }}>
+              <Button
+                onClick={cancelBuyPlayer}
+                variant="secondary"
+                size="md"
+                disabled={buying !== null}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmBuyPlayer}
+                variant="success"
+                size="md"
+                loading={buying === confirmModal.transferId}
+                disabled={buying !== null}
+              >
+                {buying === confirmModal.transferId ? "Processing..." : "Confirm Purchase"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

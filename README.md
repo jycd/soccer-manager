@@ -5,10 +5,12 @@ A fantasy soccer management application where users can create teams, buy/sell p
 ## Features
 
 - User authentication (registration/login)
+- User account deletion functionality
 - Team management with 20 players per team
 - Player transfer market with buying/selling functionality
 - Team budget management
 - Player value appreciation after transfers
+- Clean, maintainable codebase with balanced optimization
 
 ## Task Detail
 
@@ -108,6 +110,9 @@ The frontend will run on port 3000 and proxy API requests to the backend.
 - `PATCH /teams/{teamId}/transfers/{transferId}` - Update transfer price
 - `DELETE /teams/{teamId}/transfers/{playerId}` - Remove player from transfer list
 
+### Users
+- `DELETE /users/{id}` - Delete user account (admin or self)
+
 ## Technology Stack
 
 ### Backend
@@ -119,10 +124,35 @@ The frontend will run on port 3000 and proxy API requests to the backend.
 - Lombok
 
 ### Frontend
-- React 18
-- TypeScript
-- Axios
-- CSS-in-JS styling
+- React 18 with TypeScript
+- Axios for API communication
+- JWT Authentication
+- Balanced optimization approach
+- Clean component architecture
+- Essential utility functions
+
+## Frontend Architecture
+
+The frontend follows a balanced approach to optimization:
+
+### Core Components
+- **Button**: Reusable button with variants
+- **Modal**: Complex modal component
+- **CurrencyDisplay**: Specialized formatting component
+- **Dashboard**: Main team management interface
+- **TransferMarket**: Player transfer interface
+- **UserProfileEdit**: User profile and account management
+
+### Custom Hooks
+- **useAuth**: Centralized authentication state management
+
+### Utilities
+- **formatCurrency**: Currency formatting
+- **validateEmail/Password**: Form validation helpers
+
+### Constants
+- **API_BASE_URL**: Backend API configuration
+- **POSITION_ORDER**: Player position sorting
 
 ## Development Notes
 
@@ -130,3 +160,6 @@ The frontend will run on port 3000 and proxy API requests to the backend.
 - The frontend stores tokens in localStorage
 - All API requests are proxied through the React development server
 - Player values increase by 10-100% after transfers (random factor)
+- Code is optimized for maintainability without over-engineering
+- User can delete their own account with proper confirmation
+- Frontend uses balanced optimization - essential abstractions without over-engineering

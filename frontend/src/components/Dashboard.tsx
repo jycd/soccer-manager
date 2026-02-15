@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Team, Transfer, Player } from '../types';
 import { transferAPI, teamAPI, playerAPI } from '../services/api';
-import { TeamStats } from './TeamStats';
-import { PlayerTable } from './PlayerTable';
-import { Modal } from './Modal';
-import { Button } from './Button';
-import { CurrencyDisplay } from './CurrencyDisplay';
+import { TeamStats, PlayerTable, Modal, Button, CurrencyDisplay } from '../components';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
+import { POSITION_ORDER } from '../constants';
 
 interface SortConfig {
   key: keyof Team['players'][0];
@@ -17,17 +14,6 @@ interface DashboardProps {
   team: Team;
   onTeamUpdate?: (team: Team) => void;
 }
-
-const POSITION_ORDER: Record<string, number> = {
-  'GOALKEEPER': 0,
-  'DEFENDER': 1,
-  'MIDFIELDER': 2,
-  'ATTACKER': 3,
-  'goalkeeper': 0,
-  'defender': 1,
-  'midfielder': 2,
-  'attacker': 3
-} as const;
 
 export const Dashboard: React.FC<DashboardProps> = ({ team, onTeamUpdate }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
